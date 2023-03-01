@@ -1,44 +1,43 @@
 import cv2
 import numpy as np
+import os
+import xlsxwriter
 
-clicked_pixels = []
-
-img = []
-img_original = []
-img_cropped = []
-
-FLAG_cropping_finished = False
-
-def crop_image(image_full_path, show_resulting_image = True):
+def crop_image(show_resulting_image = True):
     global img
     global img_original
     global img_cropped
     global FLAG_cropping_finished
 
-    img = cv2.imread(image_full_path, 1)
-    img_original = cv2.imread(image_full_path, 1)
+    img = img_raw
+    img_original = img_raw
+
     cv2.namedWindow('image_to_crop', 0)
     cv2.resizeWindow('image_to_crop', 600, 500)
     cv2.imshow('image_to_crop', img)
 
     cv2.setMouseCallback('image_to_crop', click_event)
+
+
+
     while(FLAG_cropping_finished == False):
         k = cv2.waitKey(1)
+
+
+
     if (show_resulting_image):
+        # img_cropped = cv2.bitwise_and(mask, img_dog)
         cv2.namedWindow('img_cropped', 0)
         cv2.resizeWindow('img_cropped', 600, 500)
         cv2.imshow('img_cropped', img_cropped)
 
-        cv2.namedWindow('mask', 0)
-        cv2.resizeWindow('mask', 600, 500)
-        cv2.imshow('mask', mask)
+
 
         cv2.waitKey(0)
         # cv2.destroyWindow("img_cropped")
 
 
-    cv2.imwrite("E:\Files\ROMI-Lab Works\ROMI_CV\Resource/test/croped.jpg", img_cropped)
-    # cv2.imwrite("E:\Files\ROMI-Lab Works\ROMI_CV\Resource/test/mask.jpg", mask)
+
     return img_cropped, mask
 
 
@@ -47,14 +46,15 @@ def click_event(event, x, y, flags, params):
     global img_original
     global img_cropped
     global FLAG_cropping_finished
-
     global mask
 
-    # Create crop selection-pivots by left clicking on the image
+
+
+
     if event == cv2.EVENT_LBUTTONDOWN:
         clicked_pixels.append((x, y))
         for index, line in enumerate(clicked_pixels):
-            cv2.circle(img, line, 6, (0, 0, 255), 50)
+            cv2.circle(img, line, 6, (0, 0, 255), 20)
             # cv2.circle(img, line, 6, (0, 0, 255), 4)
             if (len(clicked_pixels) == index+1):
                 break
@@ -66,19 +66,22 @@ def click_event(event, x, y, flags, params):
         cv2.imshow('image_to_crop', img)
 
     # Close selection with right click and crop image
-    if event == cv2.EVENT_RBUTTONDOWN:
+    if event == cv2.EVENT_MBUTTONDOWN:
         clicked_pixels.append(clicked_pixels[0])
         height = img.shape[0]
         width = img.shape[1]
         mask = np.zeros((height, width), dtype=np.uint8)
         points = np.array([clicked_pixels])
         cv2.fillPoly(mask, points, (255))
-        res = cv2.bitwise_and(img_original, img_original, mask=mask)
+        # res = cv2.bitwise_and(img_original, img_original, mask=mask)
+        res = cv2.bitwise_and(img_dog, img_dog, mask=mask)
         rect = cv2.boundingRect(points)
         img_cropped = res[rect[1]: rect[1] + rect[3], rect[0]: rect[0] + rect[2]]
         # cv2.imshow(res)
         cv2.destroyWindow("image_to_crop")
         FLAG_cropping_finished = True
+
+
 
 
 
@@ -96,13 +99,16 @@ def dog_process(path):
 
     cv2.namedWindow('img_raw', 0)
     cv2.resizeWindow('img_raw', 600, 500)
-    cv2.imshow("img_raw", img_raw)
+    cv2.imshow('img_raw', img_raw)
+
+
 
     img_bar = np.zeros((100, 200), dtype='uint8')
     cv2.namedWindow("img_bar",0)
 
     cv2.createTrackbar("GAU0", "img_bar", 0, 201, nothing)
     cv2.createTrackbar("GAU1", "img_bar", 0, 501, nothing)
+
 
     cv2.setTrackbarPos('GAU0', 'img_bar', 91)
     cv2.setTrackbarPos('GAU1', 'img_bar', 201)
@@ -132,42 +138,49 @@ def dog_process(path):
 
 
         if cv2.waitKey(10) & 0xFF == ord(" "):
-            cv2.imwrite("E:\Files\ROMI-Lab Works\ROMI_CV\Resource/test/dog.jpg", img_dog)
+            # cv2.imwrite("E:\Files\ROMI-Lab Works\ROMI_CV\Resource/test/dog.jpg", img_dog)
+            cv2.destroyAllWindows()
             break
 
-
-def count(path1):
-    global img_final
+    return img_dog
 
 
-    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  
+def count():
+    global rate
+
+
+
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     contours_2 = sorted(contours, key=lambda a: cv2.contourArea(a), reverse=False)
 
     for c in contours_2:
         area = cv2.contourArea(c)
-        img_contours = cv2.drawContours(img_raw, contours, -1, (255, 0, 0), 10)
+        img_contours = cv2.drawContours(img_raw, contours, -1, (255, 0, 0), 40)
 
+    cv2.destroyAllWindows()
     cv2.namedWindow('img_contours', 0)
     cv2.resizeWindow('img_contours', 600, 500)
     cv2.imshow("img_contours", img_contours)
 
-    img_final = cv2.imread(path1)
-    img_grey = cv2.cvtColor(img_final, cv2.COLOR_BGR2GRAY)
-    ret, img_ret = cv2.threshold(img_grey, 95, 255, cv2.ADAPTIVE_THRESH_MEAN_C)
+    print("Please Wait...  ")
 
-    cv2.namedWindow('ret', 0)
-    cv2.resizeWindow('ret', 600, 500)
-    cv2.imshow("ret", img_ret)
+    # img_final = cv2.imread(path1)
 
-    x,y= img_ret.shape
+
+    x,y= img_cropped.shape
     wt=0
     for i in range(x):
         for j in range(y):
-            if img_ret[i,j]!=0:
+            if img_cropped[i,j]!=0:
                 wt += 1
     rate = wt/ area
     print("Percentage of coverage: ", round(rate*100,2),'%')
+    print("\n")
+
+
+
+    return rate
 
 
 
@@ -175,16 +188,42 @@ def count(path1):
 
 
 
+dir_path = "E:\Files\ROMI-Lab Works\ROMI_CV\Resource\pictures"
+files = os.listdir(dir_path)
 
+workbook = xlsxwriter.Workbook("E:\Files\ROMI-Lab Works\ROMI_CV\Resource\data.xlsx")
+worksheet = workbook.add_worksheet()
+row = 0
+col = 0
+worksheet.write(row, col, 'Filename')
+worksheet.write(row, col + 1, 'Percentage of Coverage')
+row += 1
 
-dog_process("E:\Files\ROMI-Lab Works\ROMI_CV\Resource/raw.jpg")
+for file in files:
+    print(file)
+    print("\n")
 
+    dog_process(dir_path+"\\"+file)
 
-crop_image("E:\Files\ROMI-Lab Works\ROMI_CV\Resource/test/dog.jpg")
+    clicked_pixels = []
+    img = []
+    img_original = []
+    img_cropped = []
+    FLAG_cropping_finished = False
 
+    crop_image()
 
-count("E:\Files\ROMI-Lab Works\ROMI_CV\Resource/test/croped.jpg")
+    count()
+
+    worksheet.write(row, col, file)
+    worksheet.write(row, col + 1, rate)
+    row += 1
+
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+workbook.close()
+
+
+
 
