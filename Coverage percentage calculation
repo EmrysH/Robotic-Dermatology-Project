@@ -2,21 +2,30 @@ import cv2
 import numpy as np
 import os
 import xlsxwriter
+import keyboard
+
+
 
 def crop_image(show_resulting_image = True):
     global img
     global img_original
     global img_cropped
+    global img_cropped1
     global FLAG_cropping_finished
 
-    img = img_raw
-    img_original = img_raw
 
-    cv2.namedWindow('image_to_crop', 0)
-    cv2.resizeWindow('image_to_crop', 600, 500)
-    cv2.imshow('image_to_crop', img)
+    img = img_raw1
+    img_original = img_raw2
 
-    cv2.setMouseCallback('image_to_crop', click_event)
+
+    cv2.namedWindow(file + '_to_crop', 0)
+    if img_raw.size > 4000 * 4000:
+        cv2.resizeWindow(file + '_to_crop', 1500, 1000)
+    else:
+        cv2.resizeWindow(file + '_to_crop', 1200, 800)
+    cv2.imshow(file + '_to_crop', img)
+
+    cv2.setMouseCallback(file + '_to_crop', click_event)
 
 
 
@@ -27,24 +36,26 @@ def crop_image(show_resulting_image = True):
 
     if (show_resulting_image):
         # img_cropped = cv2.bitwise_and(mask, img_dog)
-        cv2.namedWindow('img_cropped', 0)
-        cv2.resizeWindow('img_cropped', 600, 500)
-        cv2.imshow('img_cropped', img_cropped)
+
+
+        # cv2.namedWindow('img_cropped', 0)
+        # cv2.resizeWindow('img_cropped', 500,500)
+        # cv2.imshow('img_cropped', img_cropped)
 
 
 
         cv2.waitKey(0)
         # cv2.destroyWindow("img_cropped")
 
+    return img_cropped, img_cropped1, mask
 
-
-    return img_cropped, mask
 
 
 def click_event(event, x, y, flags, params):
     global img
     global img_original
     global img_cropped
+    global img_cropped1
     global FLAG_cropping_finished
     global mask
 
@@ -54,16 +65,21 @@ def click_event(event, x, y, flags, params):
     if event == cv2.EVENT_LBUTTONDOWN:
         clicked_pixels.append((x, y))
         for index, line in enumerate(clicked_pixels):
-            cv2.circle(img, line, 6, (0, 0, 255), 20)
-            # cv2.circle(img, line, 6, (0, 0, 255), 4)
+            if img_raw.size > 4000*4000:
+                cv2.circle(img, line, 6, (0, 0, 255), 10)
+            else:
+                cv2.circle(img, line, 1, (0, 0, 255), 5)
             if (len(clicked_pixels) == index+1):
                 break
-            cv2.line(img, clicked_pixels[index], clicked_pixels[index + 1], (0, 255, 0), 20)
-            # cv2.line(img, clicked_pixels[index], clicked_pixels[index + 1], (0, 255, 0), 2)
+            if img_raw.size > 4000 * 4000:
+                cv2.line(img, clicked_pixels[index], clicked_pixels[index + 1], (0, 255, 0), 4)
+            else:
+                cv2.line(img, clicked_pixels[index], clicked_pixels[index + 1], (0, 255, 0), 2)
 
-        cv2.namedWindow('image_to_crop', 0)
-        cv2.resizeWindow('image_to_crop', 600, 500)
-        cv2.imshow('image_to_crop', img)
+        cv2.namedWindow(file + '_to_crop', 0)
+        if img_raw.size > 4000 * 4000:        cv2.resizeWindow(file + '_to_crop', 1500, 1000)
+        else: cv2.resizeWindow(file + '_to_crop', 1200, 800)
+        cv2.imshow(file + '_to_crop', img)
 
     # Close selection with right click and crop image
     if event == cv2.EVENT_MBUTTONDOWN:
@@ -73,12 +89,13 @@ def click_event(event, x, y, flags, params):
         mask = np.zeros((height, width), dtype=np.uint8)
         points = np.array([clicked_pixels])
         cv2.fillPoly(mask, points, (255))
-        # res = cv2.bitwise_and(img_original, img_original, mask=mask)
         res = cv2.bitwise_and(img_dog, img_dog, mask=mask)
+        res1 = cv2.bitwise_and(img_original, img_original, mask=mask)
         rect = cv2.boundingRect(points)
         img_cropped = res[rect[1]: rect[1] + rect[3], rect[0]: rect[0] + rect[2]]
+        img_cropped1 = res1[rect[1]: rect[1] + rect[3], rect[0]: rect[0] + rect[2]]
         # cv2.imshow(res)
-        cv2.destroyWindow("image_to_crop")
+        cv2.destroyWindow(file + '_to_crop')
         FLAG_cropping_finished = True
 
 
@@ -91,15 +108,20 @@ def nothing(x):
 def dog_process(path):
 
     global img_raw
+    global img_raw1
+    global img_raw2
     global img_dog
 
 
     img_raw = cv2.imread(path)
+    img_raw1 = cv2.imread(path)
+    img_raw2 = cv2.imread(path)
+
     img_raw_grey = cv2.cvtColor(img_raw, cv2.COLOR_BGR2GRAY)
 
-    cv2.namedWindow('img_raw', 0)
-    cv2.resizeWindow('img_raw', 600, 500)
-    cv2.imshow('img_raw', img_raw)
+    cv2.namedWindow(file + '_raw', 0)
+    cv2.resizeWindow(file + '_raw', 1200, 800)
+    cv2.imshow(file + '_raw', img_raw)
 
 
 
@@ -109,9 +131,12 @@ def dog_process(path):
     cv2.createTrackbar("GAU0", "img_bar", 0, 201, nothing)
     cv2.createTrackbar("GAU1", "img_bar", 0, 501, nothing)
 
-
-    cv2.setTrackbarPos('GAU0', 'img_bar', 91)
-    cv2.setTrackbarPos('GAU1', 'img_bar', 201)
+    if img_raw.size > 4000 * 4000:
+        cv2.setTrackbarPos('GAU0', 'img_bar', 91)
+        cv2.setTrackbarPos('GAU1', 'img_bar', 201)
+    else:
+        cv2.setTrackbarPos('GAU0', 'img_bar', 13)
+        cv2.setTrackbarPos('GAU1', 'img_bar', 55)
 
     while True:
         GaussianValue0 = cv2.getTrackbarPos("GAU0", "img_bar")
@@ -131,16 +156,24 @@ def dog_process(path):
 
         cv2.imshow("img_bar", img_bar)
 
-        cv2.namedWindow('img_dog', 0)
-        cv2.resizeWindow('img_dog', 600, 500)
-        cv2.imshow('img_dog', img_dog)
+        # cv2.namedWindow('img_dog', 0)
+        # cv2.resizeWindow('img_dog', 1200, 800)
+        # cv2.imshow('img_dog', img_dog)
 
+        cv2.namedWindow(file, 0)
+        cv2.resizeWindow(file, 1200, 800)
+        cv2.imshow(file, img_dog)
 
 
         if cv2.waitKey(10) & 0xFF == ord(" "):
             # cv2.imwrite("E:\Files\ROMI-Lab Works\ROMI_CV\Resource/test/dog.jpg", img_dog)
             cv2.destroyAllWindows()
             break
+        if keyboard.is_pressed('ESC'):
+            cv2.destroyAllWindows()
+            workbook.close()
+            print("Quit while processing: " + Num)
+            exit()
 
     return img_dog
 
@@ -156,11 +189,13 @@ def count():
 
     for c in contours_2:
         area = cv2.contourArea(c)
-        img_contours = cv2.drawContours(img_raw, contours, -1, (255, 0, 0), 40)
+        if img_raw.size > 4000 * 4000:
+            img_contours = cv2.drawContours(img_raw, contours, -1, (255, 0, 0), 10)
+        else:  img_contours = cv2.drawContours(img_raw, contours, -1, (255, 0, 0), 2)
 
     cv2.destroyAllWindows()
     cv2.namedWindow('img_contours', 0)
-    cv2.resizeWindow('img_contours', 600, 500)
+    cv2.resizeWindow('img_contours', 1200, 800)
     cv2.imshow("img_contours", img_contours)
 
     print("Please Wait...  ")
@@ -184,45 +219,65 @@ def count():
 
 
 
+# if 0xFF != ord("q"):
 
+N = 97
+while True:
 
+    Num = "HS" + str(N)
 
+    # dir_path = "E:\Files\ROMI-Lab Works\ROMI_CV\Resource\Photos\HS2\Originals"
+    dir_path = "E:\Files\ROMI-Lab Works\ROMI_CV\Resource\Photos/" + Num + "/Originals"
+    # output_path = "E:\Files\ROMI-Lab Works\ROMI_CV\Resource\Photos\HS2/ "
+    output_path = "E:\Files\ROMI-Lab Works\ROMI_CV\Resource\Photos/" + Num + "/"
 
-dir_path = "E:\Files\ROMI-Lab Works\ROMI_CV\Resource\pictures"
-files = os.listdir(dir_path)
+    files = os.listdir(dir_path)
 
-workbook = xlsxwriter.Workbook("E:\Files\ROMI-Lab Works\ROMI_CV\Resource\data.xlsx")
-worksheet = workbook.add_worksheet()
-row = 0
-col = 0
-worksheet.write(row, col, 'Filename')
-worksheet.write(row, col + 1, 'Percentage of Coverage')
-row += 1
-
-for file in files:
-    print(file)
-    print("\n")
-
-    dog_process(dir_path+"\\"+file)
-
-    clicked_pixels = []
-    img = []
-    img_original = []
-    img_cropped = []
-    FLAG_cropping_finished = False
-
-    crop_image()
-
-    count()
-
-    worksheet.write(row, col, file)
-    worksheet.write(row, col + 1, rate)
+    workbook = xlsxwriter.Workbook(output_path+"/data.xlsx")
+    worksheet = workbook.add_worksheet()
+    row = 0
+    col = 0
+    worksheet.write(row, col, 'Filename')
+    worksheet.write(row, col + 1, 'Percentage of Coverage')
     row += 1
 
+    for file in files:
 
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-workbook.close()
+        print(Num + "---" + file)
+        print("\n")
+
+        dog_process(dir_path+"\\"+file)
+
+        clicked_pixels = []
+        img = []
+        img_original = []
+        img_cropped = []
+        FLAG_cropping_finished = False
+
+        crop_image()
+
+        cv2.imwrite(output_path +'Crop_RGB/' + Num + "_RGB_" + str(file), img_cropped1)
+        cv2.imwrite(output_path + 'Crop_BnW/' + Num + "_BnW_" + str(file)  , img_cropped)
+
+        count()
+
+
+        worksheet.write(row, col, Num + "_" + str(file))
+        worksheet.write(row, col + 1, rate)
+        row += 1
+
+        if row == 5:
+
+            N += 1
+
+            print(Num + " is finished")
+            print("\n")
+            break
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    workbook.close()
+
 
 
 
